@@ -540,6 +540,7 @@
                 <div class="image-container" id="imageContainer">
                     <div class="emoji-display" id="emojiDisplay">🎨</div>
                     </div>
+                    <div id="emojiHint" class="hint-text">Type to see emojis!</div>
                     <div id="emojiCaption" class="caption-emoji"></div>
                     <p class="hint-text">Draw emojis based on your story!</p>
             </div>
@@ -761,8 +762,26 @@
         const addBtn = document.getElementById('addBtn');
         const clearBtn = document.getElementById('clearBtn');
 
+        const emojiHint = document.getElementById('emojiHint');
+        
         storyInput.addEventListener('input', () => {
-            addBtn.disabled = storyInput.value.trim().length === 0;
+            const text = storyInput.value.trim();
+            addBtn.disabled = text.length === 0;
+            
+            if (text.length > 0) {
+                const emojis = getEmojiForText(text);
+                const emojiDisplay = document.getElementById('emojiDisplay');
+                if (emojis.length === 1) {
+                    emojiDisplay.innerHTML = emojis[0];
+                    emojiDisplay.className = 'emoji-display';
+                } else {
+                    emojiDisplay.innerHTML = emojis.map(e => `<span>${e}</span>`).join('');
+                    emojiDisplay.className = 'emoji-collage';
+                }
+                if (emojiHint) emojiHint.style.display = 'none';
+            } else {
+                if (emojiHint) emojiHint.style.display = 'block';
+            }
         });
 
         addBtn.addEventListener('click', () => {
@@ -789,10 +808,12 @@
 
         loadFromStorage();
         renderStoryList();
-
+        
         if (storyData.sentences.length > 0) {
             const latestSentence = storyData.sentences[storyData.sentences.length - 1];
             generateEmojiVisual(latestSentence.text);
+        } else if (emojiHint) {
+            emojiHint.style.display = 'block';
         }
     </script>
 </body>
