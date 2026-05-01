@@ -1,0 +1,688 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Story Chain - Classroom Story Builder</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-primary: #FFF9E6;
+            --bg-left: #FFEFD5;
+            --bg-right: #E6F3FF;
+            --accent-primary: #FF6B6B;
+            --accent-secondary: #4ECDC4;
+            --accent-tertiary: #FFE66D;
+            --text-primary: #5D4E37;
+            --text-secondary: #8B7355;
+            --border-color: #FFDAB9;
+            --card-bg: #FFFFFF;
+            --shadow: rgba(255, 107, 107, 0.15);
+        }
+
+        body {
+            font-family: 'Nunito', 'Comic Sans MS', cursive;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: 
+                radial-gradient(circle at 10% 20%, #FFE66D 2px, transparent 2px),
+                radial-gradient(circle at 90% 80%, #FF6B6B 2px, transparent 2px),
+                radial-gradient(circle at 50% 10%, #4ECDC4 3px, transparent 3px),
+                radial-gradient(circle at 80% 30%, #FFE66D 2px, transparent 2px),
+                radial-gradient(circle at 20% 70%, #4ECDC4 2px, transparent 2px);
+            background-size: 100px 100px;
+            opacity: 0.3;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .container {
+            display: flex;
+            min-height: 100vh;
+            position: relative;
+            z-index: 1;
+        }
+
+        .panel {
+            flex: 1;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            overflow: hidden;
+        }
+
+        .left-panel {
+            background: var(--bg-left);
+            border-right: 3px dashed var(--border-color);
+        }
+
+        .right-panel {
+            background: var(--bg-right);
+        }
+
+        .header {
+            text-align: center;
+            padding: 10px 0;
+        }
+
+        .title {
+            font-size: 32px;
+            color: var(--accent-primary);
+            text-shadow: 2px 2px 0 var(--accent-tertiary);
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .subtitle {
+            font-size: 18px;
+            color: var(--text-secondary);
+        }
+
+        .card {
+            background: var(--card-bg);
+            border-radius: 16px;
+            padding: 16px;
+            box-shadow: 0 4px 12px var(--shadow);
+        }
+
+        .input-section {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .input-section textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid var(--border-color);
+            border-radius: 12px;
+            font-size: 18px;
+            font-family: inherit;
+            resize: none;
+            background: #FFFAF0;
+            color: var(--text-primary);
+            transition: all 0.3s ease;
+        }
+
+        .input-section textarea:focus {
+            outline: none;
+            border-color: var(--accent-secondary);
+            box-shadow: 0 0 0 4px rgba(78, 205, 196, 0.2);
+        }
+
+        .input-section textarea::placeholder {
+            color: var(--text-secondary);
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 12px;
+            font-size: 18px;
+            font-family: inherit;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .btn:active {
+            transform: scale(0.95);
+        }
+
+        .btn-primary {
+            background: var(--accent-primary);
+            color: white;
+            flex: 1;
+        }
+
+        .btn-primary:hover {
+            background: #FF8E8E;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(255, 107, 107, 0.3);
+        }
+
+        .btn-primary:disabled {
+            background: #CCC;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .btn-secondary {
+            background: var(--accent-secondary);
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #6ED7D0;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(78, 205, 196, 0.3);
+        }
+
+        .btn-danger {
+            background: #FFB6B6;
+            color: var(--accent-primary);
+            font-size: 14px;
+            padding: 8px 12px;
+        }
+
+        .story-section {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+        }
+
+        .story-header {
+            font-size: 24px;
+            color: var(--accent-secondary);
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .story-list {
+            flex: 1;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            padding-right: 8px;
+        }
+
+        .story-list::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .story-list::-webkit-scrollbar-track {
+            background: var(--border-color);
+            border-radius: 4px;
+        }
+
+        .story-list::-webkit-scrollbar-thumb {
+            background: var(--accent-secondary);
+            border-radius: 4px;
+        }
+
+        .story-item {
+            background: linear-gradient(135deg, #FFFAF0 0%, #FFF5E6 100%);
+            border-radius: 12px;
+            padding: 12px;
+            position: relative;
+            border-left: 4px solid var(--accent-tertiary);
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .story-item-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 6px;
+        }
+
+        .story-number {
+            background: var(--accent-tertiary);
+            color: var(--text-primary);
+            padding: 2px 10px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        .story-time {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .story-text {
+            font-size: 18px;
+            line-height: 1.5;
+            word-break: break-word;
+        }
+
+        .story-delete {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background: none;
+            border: none;
+            font-size: 16px;
+            cursor: pointer;
+            opacity: 0.5;
+            transition: all 0.2s ease;
+            padding: 4px;
+        }
+
+        .story-delete:hover {
+            opacity: 1;
+            transform: scale(1.2);
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--text-secondary);
+            font-size: 18px;
+        }
+
+        .empty-state span {
+            font-size: 48px;
+            display: block;
+            margin-bottom: 12px;
+        }
+
+        .image-section {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .image-container {
+            width: 100%;
+            max-width: 90%;
+            aspect-ratio: 1;
+            background: var(--card-bg);
+            border-radius: 16px;
+            box-shadow: 0 4px 12px var(--shadow);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .image-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: none;
+        }
+
+        .image-container img.loaded {
+            display: block;
+            animation: fadeIn 0.5s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .image-placeholder {
+            text-align: center;
+            color: var(--text-secondary);
+            padding: 20px;
+        }
+
+        .image-placeholder span {
+            font-size: 64px;
+            display: block;
+            margin-bottom: 12px;
+        }
+
+        .loading-spinner {
+            width: 60px;
+            height: 60px;
+            border: 4px solid var(--border-color);
+            border-top-color: var(--accent-secondary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .image-caption {
+            margin-top: 16px;
+            font-size: 18px;
+            color: var(--text-primary);
+            text-align: center;
+            padding: 12px 20px;
+            background: var(--card-bg);
+            border-radius: 12px;
+            box-shadow: 0 4px 12px var(--shadow);
+            max-width: 90%;
+        }
+
+        .error-message {
+            color: var(--accent-primary);
+            text-align: center;
+            padding: 20px;
+        }
+
+        .error-message span {
+            font-size: 32px;
+            display: block;
+            margin-bottom: 8px;
+        }
+
+        .clear-btn {
+            margin-top: 8px;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                flex-direction: column;
+            }
+
+            .panel {
+                min-height: 50vh;
+            }
+
+            .left-panel {
+                border-right: none;
+                border-bottom: 3px dashed var(--border-color);
+            }
+
+            .title {
+                font-size: 26px;
+            }
+
+            .story-list {
+                max-height: 300px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="panel left-panel">
+            <div class="header">
+                <h1 class="title">🌟 Story Chain 🌟</h1>
+                <p class="subtitle">✨ Let's write an interesting story together!</p>
+            </div>
+
+            <div class="card input-section">
+                <textarea id="storyInput" rows="3" placeholder="Write your story sentence here..."></textarea>
+                <div class="button-group">
+                    <button id="addBtn" class="btn btn-primary" disabled>➕ Add to Story</button>
+                    <button id="clearBtn" class="btn btn-secondary">🗑️</button>
+                </div>
+            </div>
+
+            <div class="card story-section">
+                <div class="story-header">📖 Story Chain</div>
+                <div id="storyList" class="story-list">
+                    <div class="empty-state">
+                        <span>✨</span>
+                        Write the first sentence!
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="panel right-panel">
+            <div class="header">
+                <h2 class="title">🎨 Magic Canvas</h2>
+            </div>
+
+            <div class="image-section">
+                <div class="image-container" id="imageContainer">
+                    <div class="image-placeholder" id="imagePlaceholder">
+                        <span>🖼️</span>
+                        <p>Add sentences and the magic canvas will generate images!</p>
+                    </div>
+                    <div class="loading-spinner" id="loadingSpinner" style="display: none;"></div>
+                    <img id="storyImage" alt="Story image">
+                </div>
+                <div id="imageCaption" class="image-caption" style="display: none;"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const STORAGE_KEY = 'storyChain_data';
+        let storyData = { sentences: [] };
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function generateId() {
+            return Date.now().toString(36) + Math.random().toString(36).substr(2);
+        }
+
+        function loadFromStorage() {
+            const saved = localStorage.getItem(STORAGE_KEY);
+            if (saved) {
+                try {
+                    storyData = JSON.parse(saved);
+                } catch (e) {
+                    storyData = { sentences: [] };
+                }
+            }
+        }
+
+        function saveToStorage() {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(storyData));
+        }
+
+        function formatTime(timestamp) {
+            const date = new Date(timestamp);
+            return date.getHours().toString().padStart(2, '0') + ':' + 
+                   date.getMinutes().toString().padStart(2, '0');
+        }
+
+        function renderStoryList() {
+            const storyList = document.getElementById('storyList');
+            
+            if (storyData.sentences.length === 0) {
+                storyList.innerHTML = `
+                    <div class="empty-state">
+                        <span>✨</span>
+                        Write the first sentence!
+                    </div>
+                `;
+                return;
+            }
+
+            storyList.innerHTML = storyData.sentences
+                .slice()
+                .reverse()
+                .map((sentence, index) => `
+                    <div class="story-item" data-id="${sentence.id}">
+                        <button class="story-delete" onclick="deleteSentence('${sentence.id}')">✕</button>
+                        <div class="story-item-header">
+                            <span class="story-number">Sentence ${storyData.sentences.length - index}</span>
+                            <span class="story-time">${formatTime(sentence.timestamp)}</span>
+                        </div>
+                        <div class="story-text">${escapeHtml(sentence.text)}</div>
+                    </div>
+                `).join('');
+        }
+
+        async function generateImage(text) {
+            const imagePlaceholder = document.getElementById('imagePlaceholder');
+            const storyImage = document.getElementById('storyImage');
+            const loadingSpinner = document.getElementById('loadingSpinner');
+            const imageCaption = document.getElementById('imageCaption');
+            
+            imagePlaceholder.style.display = 'none';
+            storyImage.style.display = 'none';
+            loadingSpinner.style.display = 'block';
+            imageCaption.style.display = 'none';
+
+            const keywords = 'cartoon style, colorful, children illustration, cute, fun, whimsical';
+            const prompt = encodeURIComponent(`${text} ${keywords}`);
+            const imageUrl = `https://image.pollinations.ai/prompt/${prompt}?width=512&height=512&nologo=true`;
+
+            const img = new Image();
+            img.crossOrigin = 'anonymous';
+            
+            return new Promise((resolve, reject) => {
+                img.onload = () => {
+                    loadingSpinner.style.display = 'none';
+                    storyImage.src = imageUrl;
+                    storyImage.classList.add('loaded');
+                    imageCaption.textContent = `🎨 ${text}`;
+                    imageCaption.style.display = 'block';
+                    resolve();
+                };
+
+                img.onerror = () => {
+                    loadingSpinner.style.display = 'none';
+                    const imageContainer = document.getElementById('imageContainer');
+                    imageContainer.innerHTML = `
+                        <div class="error-message">
+                            <span>😢</span>
+                            <p>Image generation failed...</p>
+                            <button class="btn btn-secondary" onclick="retryImage('${escapeHtml(text)}')">Try Again</button>
+                        </div>
+                    `;
+                    reject(new Error('Image generation failed'));
+                };
+
+                img.src = imageUrl;
+            });
+        }
+
+        function retryImage(text) {
+            const imageContainer = document.getElementById('imageContainer');
+            imageContainer.innerHTML = '';
+            const placeholder = document.createElement('div');
+            placeholder.className = 'image-placeholder';
+            placeholder.id = 'imagePlaceholder';
+            placeholder.innerHTML = '<span>🖼️</span><p>Add sentences and the magic canvas will generate images!</p>';
+            
+            const spinner = document.createElement('div');
+            spinner.className = 'loading-spinner';
+            spinner.id = 'loadingSpinner';
+            spinner.style.display = 'none';
+            
+            const img = document.createElement('img');
+            img.id = 'storyImage';
+            img.alt = 'Story image';
+            
+            imageContainer.appendChild(placeholder);
+            imageContainer.appendChild(spinner);
+            imageContainer.appendChild(img);
+            
+            generateImage(text);
+        }
+
+        function deleteSentence(id) {
+            storyData.sentences = storyData.sentences.filter(s => s.id !== id);
+            saveToStorage();
+            renderStoryList();
+            
+            const imagePlaceholder = document.getElementById('imagePlaceholder');
+            const storyImage = document.getElementById('storyImage');
+            const imageCaption = document.getElementById('imageCaption');
+            
+            if (storyData.sentences.length > 0) {
+                const latestSentence = storyData.sentences[storyData.sentences.length - 1];
+                generateImage(latestSentence.text);
+            } else {
+                imagePlaceholder.style.display = 'block';
+                storyImage.style.display = 'none';
+                storyImage.classList.remove('loaded');
+                imageCaption.style.display = 'none';
+            }
+        }
+
+        function clearStory() {
+            if (storyData.sentences.length === 0) return;
+            
+            if (confirm('Clear all stories?')) {
+                storyData = { sentences: [] };
+                saveToStorage();
+                renderStoryList();
+                
+                const imagePlaceholder = document.getElementById('imagePlaceholder');
+                const storyImage = document.getElementById('storyImage');
+                const imageCaption = document.getElementById('imageCaption');
+                
+                imagePlaceholder.style.display = 'block';
+                storyImage.style.display = 'none';
+                storyImage.classList.remove('loaded');
+                imageCaption.style.display = 'none';
+            }
+        }
+
+        const storyInput = document.getElementById('storyInput');
+        const addBtn = document.getElementById('addBtn');
+        const clearBtn = document.getElementById('clearBtn');
+
+        storyInput.addEventListener('input', () => {
+            addBtn.disabled = storyInput.value.trim().length === 0;
+        });
+
+        addBtn.addEventListener('click', () => {
+            const text = storyInput.value.trim();
+            if (!text) return;
+
+            const newSentence = {
+                id: generateId(),
+                text: text,
+                timestamp: Date.now()
+            };
+
+            storyData.sentences.push(newSentence);
+            saveToStorage();
+            renderStoryList();
+            
+            storyInput.value = '';
+            addBtn.disabled = true;
+            
+            generateImage(text);
+        });
+
+        clearBtn.addEventListener('click', clearStory);
+
+        loadFromStorage();
+        renderStoryList();
+
+        if (storyData.sentences.length > 0) {
+            const latestSentence = storyData.sentences[storyData.sentences.length - 1];
+            generateImage(latestSentence.text);
+        }
+    </script>
+</body>
+</html>
