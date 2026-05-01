@@ -313,12 +313,50 @@
             margin-bottom: 12px;
         }
 
-        .image-section {
+.image-section {
             flex: 1;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
+        }
+
+        .image-container {
+            width: 100%;
+            max-width: 90%;
+            aspect-ratio: 1;
+            background: var(--card-bg);
+            border-radius: 16px;
+            box-shadow: 0 4px 12px var(--shadow);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .image-caption {
+            margin-top: 16px;
+            font-size: 18px;
+            color: var(--text-primary);
+            text-align: center;
+            padding: 12px 20px;
+            background: var(--card-bg);
+            border-radius: 12px;
+            box-shadow: 0 4px 12px var(--shadow);
+            max-width: 90%;
+        }
+
+        .error-message {
+            color: var(--accent-primary);
+            text-align: center;
+            padding: 20px;
+        }
+
+        .error-message span {
+            font-size: 32px;
+            display: block;
+            margin-bottom: 8px;
         }
 
         .image-container {
@@ -364,17 +402,54 @@
             margin-bottom: 12px;
         }
 
-        .loading-spinner {
-            width: 60px;
-            height: 60px;
-            border: 4px solid var(--border-color);
-            border-top-color: var(--accent-secondary);
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
+        .emoji-display {
+            font-size: 120px;
+            line-height: 1.2;
+            text-align: center;
+            animation: bounce 0.6s ease infinite alternate;
         }
 
-        @keyframes spin {
-            to { transform: rotate(360deg); }
+        @keyframes bounce {
+            from { transform: translateY(0); }
+            to { transform: translateY(-10px); }
+        }
+
+        .emoji-collage {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 10px;
+            font-size: 60px;
+            animation: popIn 0.5s ease;
+        }
+
+        @keyframes popIn {
+            0% { transform: scale(0); opacity: 0; }
+            70% { transform: scale(1.2); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        .caption-emoji {
+            font-size: 18px;
+            color: var(--text-primary);
+            text-align: center;
+            padding: 12px 20px;
+            background: var(--card-bg);
+            border-radius: 12px;
+            box-shadow: 0 4px 12px var(--shadow);
+            max-width: 90%;
+            font-weight: 600;
+        }
+
+        .caption-emoji .emoji {
+            margin-right: 8px;
+        }
+
+        .hint-text {
+            font-size: 14px;
+            color: var(--text-secondary);
+            text-align: center;
+            margin-top: 8px;
         }
 
         .image-caption {
@@ -458,19 +533,15 @@
 
         <div class="panel right-panel">
             <div class="header">
-                <h2 class="title">🎨 Magic Canvas</h2>
+                <h2 class="title">😀 Emoji Canvas</h2>
             </div>
 
             <div class="image-section">
                 <div class="image-container" id="imageContainer">
-                    <div class="image-placeholder" id="imagePlaceholder">
-                        <span>🖼️</span>
-                        <p>Add sentences and the magic canvas will generate images!</p>
+                    <div class="emoji-display" id="emojiDisplay">🎨</div>
                     </div>
-                    <div class="loading-spinner" id="loadingSpinner" style="display: none;"></div>
-                    <img id="storyImage" alt="Story image">
-                </div>
-                <div id="imageCaption" class="image-caption" style="display: none;"></div>
+                    <div id="emojiCaption" class="caption-emoji"></div>
+                    <p class="hint-text">Draw emojis based on your story!</p>
             </div>
         </div>
     </div>
@@ -538,92 +609,134 @@
                 `).join('');
         }
 
-        async function generateImage(text) {
-            const imagePlaceholder = document.getElementById('imagePlaceholder');
-            const storyImage = document.getElementById('storyImage');
-            const loadingSpinner = document.getElementById('loadingSpinner');
-            const imageCaption = document.getElementById('imageCaption');
+        const EMOJI_KEYWORDS = {
+            'happy': ['😊', '😄', '🥰', '🌟', '✨'],
+            'sad': ['😢', '😭', '💔', '😞'],
+            'love': ['❤️', '💕', '💖', '🥰', '💗'],
+            'angry': ['😠', '😡', '💢', '😤'],
+            'surprised': ['😲', '😱', '😮', '🤯'],
+            'scared': ['😨', '😱', '👻', '😰'],
+            'funny': ['😂', '🤣', '😆', '💀'],
+            'cool': ['😎', '🤙', '🕶️', '🔥'],
+            'dog': ['🐕', '🐶', '🦮', '🐕‍🦺'],
+            'cat': ['🐱', '🐈', '😺', '😸'],
+            'bird': ['🐦', '🐤', '🐣', '🦜'],
+            'fish': ['🐟', '🐠', '🐡', '🦈'],
+            'horse': ['🐴', '🦄', '🐎'],
+            'cow': ['🐄', '🐂', '🐃'],
+            'pig': ['🐷', '🐖', '🐑'],
+            'chicken': ['🐔', '🐣', '🐤'],
+            'baby': ['👶', '🍼', '👼'],
+            'child': ['👧', '👦', '🧒', '👸'],
+            'king': ['👑', '🤴', '🦵'],
+            'queen': ['👑', '👸', '🦵'],
+            'princess': ['👸', '✨', '🏰'],
+            'prince': ['🤴', '✨', '🏰'],
+            'wizard': ['🧙', '🪄', '✨'],
+            'witch': ['🧙‍♀️', '🧹', '🌙'],
+            'fairy': ['🧚', '✨', '🦋'],
+            'dragon': ['🐉', '🔥', '🌋'],
+            'unicorn': ['🦄', '✨', '🌈'],
+            'mermaid': ['🧜', '🧜‍♀️', '🫧'],
+            'ghost': ['👻', '💀', '🦴'],
+            'robot': ['🤖', '⚙️', '🦾'],
+            'alien': ['👽', '🛸', '🌟'],
+            'star': ['⭐', '🌟', '✨'],
+            'moon': ['🌙', '🌕', '🌛'],
+            'sun': ['☀️', '🌞', '😎'],
+            'rain': ['🌧️', '💧', '☔'],
+            'snow': ['❄️', '⛄', '🌨️'],
+            'cloud': ['☁️', '🌥️', '🌤️'],
+            'rainbow': ['🌈', '🎨', '🌤️'],
+            'flower': ['🌸', '🌺', '🌻', '🌹'],
+            'tree': ['🌳', '🌲', '🌴'],
+            'house': ['🏠', '🏡', '🏰'],
+            'castle': ['🏰', '🏯', '👑'],
+            'car': ['🚗', '🚙', '🏎️'],
+            'plane': ['✈️', '🛩️', '🚀'],
+            'boat': ['⛵', '🚤', '🛳️'],
+            'train': ['🚂', '🚃', '🚆'],
+            'fire': ['🔥', '💥', '🌋'],
+            'water': ['💧', '💦', '🌊'],
+            'food': ['🍕', '🍔', '🍟', '🌮'],
+            'cake': ['🎂', '🧁', '🍰'],
+            'gift': ['🎁', '🎀', '🎉'],
+            'music': ['🎵', '🎶', '🎵'],
+            'dance': ['💃', '🕺', '🎶'],
+            'sleep': ['😴', '💤', '🛏️'],
+            'run': ['🏃', '💨', '⚡'],
+            'jump': ['🦘', '⬆️', '✨'],
+            'eat': ['🍽️', '😋', '🥄'],
+            'cry': ['😢', '😭', '💔'],
+            'laugh': ['😂', '🤣', '😄'],
+            'magic': ['✨', '🪄', '🌟'],
+            'adventure': ['🗺️', '⚔️', '🛡️'],
+            'treasure': ['💎', '💰', '🏆'],
+            'hero': ['🦸', '⚔️', '🛡️'],
+            'beautiful': ['💖', '✨', '🌸']
+        };
+
+        function getEmojiForText(text) {
+            const lowerText = text.toLowerCase();
+            const emojiSets = [];
             
-            imagePlaceholder.style.display = 'none';
-            storyImage.style.display = 'none';
-            loadingSpinner.style.display = 'block';
-            imageCaption.style.display = 'none';
-
-            const keywords = 'cartoon style, colorful, children illustration, cute, fun, whimsical';
-            const prompt = encodeURIComponent(`${text} ${keywords}`);
-            const imageUrl = `https://image.pollinations.ai/prompt/${prompt}?width=512&height=512&nologo=true`;
-
-            const img = new Image();
-            img.crossOrigin = 'anonymous';
+            for (const [keyword, emojis] of Object.entries(EMOJI_KEYWORDS)) {
+                if (lowerText.includes(keyword)) {
+                    emojiSets.push(emojis);
+                }
+            }
             
-            return new Promise((resolve, reject) => {
-                img.onload = () => {
-                    loadingSpinner.style.display = 'none';
-                    storyImage.src = imageUrl;
-                    storyImage.classList.add('loaded');
-                    imageCaption.textContent = `🎨 ${text}`;
-                    imageCaption.style.display = 'block';
-                    resolve();
-                };
-
-                img.onerror = () => {
-                    loadingSpinner.style.display = 'none';
-                    const imageContainer = document.getElementById('imageContainer');
-                    imageContainer.innerHTML = `
-                        <div class="error-message">
-                            <span>😢</span>
-                            <p>Image generation failed...</p>
-                            <button class="btn btn-secondary" onclick="retryImage('${escapeHtml(text)}')">Try Again</button>
-                        </div>
-                    `;
-                    reject(new Error('Image generation failed'));
-                };
-
-                img.src = imageUrl;
-            });
+            if (emojiSets.length === 0) {
+                return ['✨', '📖', '🌟'];
+            }
+            
+            const uniqueEmojis = [];
+            for (const set of emojiSets) {
+                for (const emoji of set) {
+                    if (!uniqueEmojis.includes(emoji)) {
+                        uniqueEmojis.push(emoji);
+                    }
+                }
+            }
+            
+            return uniqueEmojis.slice(0, 6);
         }
 
-        function retryImage(text) {
-            const imageContainer = document.getElementById('imageContainer');
-            imageContainer.innerHTML = '';
-            const placeholder = document.createElement('div');
-            placeholder.className = 'image-placeholder';
-            placeholder.id = 'imagePlaceholder';
-            placeholder.innerHTML = '<span>🖼️</span><p>Add sentences and the magic canvas will generate images!</p>';
+        function generateEmojiVisual(text) {
+            const emojiDisplay = document.getElementById('emojiDisplay');
+            const emojiCaption = document.getElementById('emojiCaption');
             
-            const spinner = document.createElement('div');
-            spinner.className = 'loading-spinner';
-            spinner.id = 'loadingSpinner';
-            spinner.style.display = 'none';
+            const emojis = getEmojiForText(text);
             
-            const img = document.createElement('img');
-            img.id = 'storyImage';
-            img.alt = 'Story image';
+            if (emojis.length === 1) {
+                emojiDisplay.innerHTML = emojis[0];
+                emojiDisplay.className = 'emoji-display';
+            } else {
+                emojiDisplay.innerHTML = emojis.map(e => `<span>${e}</span>`).join('');
+                emojiDisplay.className = 'emoji-collage';
+            }
             
-            imageContainer.appendChild(placeholder);
-            imageContainer.appendChild(spinner);
-            imageContainer.appendChild(img);
-            
-            generateImage(text);
+            emojiCaption.innerHTML = `<span class="emoji">📝</span>${text}`;
+            emojiCaption.style.display = 'block';
         }
+
+        
 
         function deleteSentence(id) {
             storyData.sentences = storyData.sentences.filter(s => s.id !== id);
             saveToStorage();
             renderStoryList();
             
-            const imagePlaceholder = document.getElementById('imagePlaceholder');
-            const storyImage = document.getElementById('storyImage');
-            const imageCaption = document.getElementById('imageCaption');
+            const emojiDisplay = document.getElementById('emojiDisplay');
+            const emojiCaption = document.getElementById('emojiCaption');
             
             if (storyData.sentences.length > 0) {
                 const latestSentence = storyData.sentences[storyData.sentences.length - 1];
-                generateImage(latestSentence.text);
+                generateEmojiVisual(latestSentence.text);
             } else {
-                imagePlaceholder.style.display = 'block';
-                storyImage.style.display = 'none';
-                storyImage.classList.remove('loaded');
-                imageCaption.style.display = 'none';
+                emojiDisplay.innerHTML = '🎨';
+                emojiDisplay.className = 'emoji-display';
+                emojiCaption.style.display = 'none';
             }
         }
 
@@ -635,14 +748,12 @@
                 saveToStorage();
                 renderStoryList();
                 
-                const imagePlaceholder = document.getElementById('imagePlaceholder');
-                const storyImage = document.getElementById('storyImage');
-                const imageCaption = document.getElementById('imageCaption');
+                const emojiDisplay = document.getElementById('emojiDisplay');
+                const emojiCaption = document.getElementById('emojiCaption');
                 
-                imagePlaceholder.style.display = 'block';
-                storyImage.style.display = 'none';
-                storyImage.classList.remove('loaded');
-                imageCaption.style.display = 'none';
+                emojiDisplay.innerHTML = '🎨';
+                emojiDisplay.className = 'emoji-display';
+                emojiCaption.style.display = 'none';
             }
         }
 
@@ -671,7 +782,7 @@
             storyInput.value = '';
             addBtn.disabled = true;
             
-            generateImage(text);
+            generateEmojiVisual(text);
         });
 
         clearBtn.addEventListener('click', clearStory);
@@ -681,7 +792,7 @@
 
         if (storyData.sentences.length > 0) {
             const latestSentence = storyData.sentences[storyData.sentences.length - 1];
-            generateImage(latestSentence.text);
+            generateEmojiVisual(latestSentence.text);
         }
     </script>
 </body>
